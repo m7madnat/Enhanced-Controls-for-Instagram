@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Instagram Video Controls Options</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Chrome Extension</p>
+          <h1>Instagram Video Controls</h1>
+          <p class="subtitle">Configure playback behavior, saved defaults, shortcuts, and the control bar.</p>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>Playback state</h2>
+
+        <label class="row">
+          <span>
+            <strong>Remember volume</strong>
+            <small>Keep the last selected volume for future videos.</small>
+          </span>
+          <input id="rememberVolume" type="checkbox" />
+        </label>
+
+        <label class="field">
+          <span>Default volume</span>
+          <div class="range-line">
+            <input id="defaultVolume" type="range" min="0" max="1" step="0.05" />
+            <output id="defaultVolumeValue">70%</output>
+          </div>
+        </label>
+
+        <label class="row">
+          <span>
+            <strong>Remember muted state</strong>
+            <small>Keep the last mute/sound choice for future videos.</small>
+          </span>
+          <input id="rememberMuted" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span>
+            <strong>Default muted</strong>
+            <small>Used when muted state is not remembered.</small>
+          </span>
+          <input id="defaultMuted" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span>
+            <strong>Remember speed</strong>
+            <small>Keep the last playback speed for future videos.</small>
+          </span>
+          <input id="rememberSpeed" type="checkbox" />
+        </label>
+
+        <label class="field">
+          <span>Default speed</span>
+          <select id="defaultSpeed">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1">1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="1.75">1.75x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Keyboard shortcuts</h2>
+
+        <label class="row">
+          <span>
+            <strong>Enable keyboard shortcuts</strong>
+            <small>Space, arrows, M, D, 1, and 2.</small>
+          </span>
+          <input id="keyboardShortcutsEnabled" type="checkbox" />
+        </label>
+
+        <label class="field">
+          <span>Seek step</span>
+          <select id="seekStepSeconds">
+            <option value="5">5 seconds</option>
+            <option value="10">10 seconds</option>
+            <option value="15">15 seconds</option>
+            <option value="30">30 seconds</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Volume step</span>
+          <select id="volumeStep">
+            <option value="0.05">5%</option>
+            <option value="0.1">10%</option>
+            <option value="0.15">15%</option>
+            <option value="0.2">20%</option>
+          </select>
+        </label>
+
+        <div class="shortcuts">
+          <div><kbd>Space</kbd><span>Play / Pause</span></div>
+          <div><kbd>←</kbd><span>Back</span></div>
+          <div><kbd>→</kbd><span>Forward</span></div>
+          <div><kbd>↑</kbd><span>Volume up</span></div>
+          <div><kbd>↓</kbd><span>Volume down</span></div>
+          <div><kbd>M</kbd><span>Mute</span></div>
+          <div><kbd>D</kbd><span>Download</span></div>
+          <div><kbd>1</kbd><span>1x speed</span></div>
+          <div><kbd>2</kbd><span>2x speed</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Behavior</h2>
+
+        <label class="row">
+          <span>
+            <strong>Background playback</strong>
+            <small>Keep a playing video active after Alt + Tab or tab blur.</small>
+          </span>
+          <input id="backgroundPlayback" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span>
+            <strong>Keep current video playing</strong>
+            <small>Resist Instagram auto-pausing the active video when possible.</small>
+          </span>
+          <input id="keepCurrentVideoPlaying" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span>
+            <strong>Show download button</strong>
+            <small>Open the FastDL helper page for the current post/reel.</small>
+          </span>
+          <input id="showDownloadButton" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span>
+            <strong>Show controls only on hover</strong>
+            <small>Disable this to keep the control bar visible while the video is visible.</small>
+          </span>
+          <input id="showControlsOnlyOnHover" type="checkbox" />
+        </label>
+      </section>
+
+      <footer class="actions">
+        <button id="resetButton" type="button" class="secondary">Reset defaults</button>
+        <span id="saveStatus" role="status" aria-live="polite"></span>
+      </footer>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
