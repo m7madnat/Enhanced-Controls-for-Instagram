@@ -6,6 +6,7 @@
     const iframe = document.createElement("iframe");
 
     iframe.setAttribute("title", "Instagram Video Controls");
+    iframe.dataset.igvcOverlay = "bar";
     iframe.setAttribute("frameborder", "0");
     iframe.setAttribute("allowtransparency", "true");
 
@@ -124,6 +125,11 @@
               font-size: 16px;
             }
 
+            .collapse-button {
+              display: none;
+              font-size: 16px;
+            }
+
             .speed-select {
               width: 28px;
               height: 30px;
@@ -167,6 +173,16 @@
                 font-size: 16px;
               }
             }
+            /* Feed videos can be narrower than 360px. Keep the controls
+               inside their iframe instead of spilling into the side column. */
+            @media (max-width: 310px) {
+              .bar { gap: 4px; padding: 0 5px; }
+              .time { min-width: 53px; font-size: 11px; }
+              .seek { min-width: 24px; }
+              .right-controls { gap: 3px; }
+              .speed-select { width: 22px; }
+              .download-button { display: none; }
+            }
           </style>
         </head>
 
@@ -194,6 +210,7 @@
               </select>
 
               <button id="muteButton" type="button" title="Mute / Sound">🔊</button>
+              <button id="collapseButton" class="collapse-button" type="button" title="Collapse controls">×</button>
             </div>
           </div>
         </body>
@@ -209,6 +226,7 @@
     const iframe = document.createElement("iframe");
 
     iframe.setAttribute("title", "Instagram Volume Control");
+    iframe.dataset.igvcOverlay = "volume";
     iframe.setAttribute("frameborder", "0");
     iframe.setAttribute("allowtransparency", "true");
 
@@ -301,6 +319,41 @@ background-color: rgba(0, 0, 0, 0.94) !important;
     return iframe;
   }
 
+  function createCompactLauncherIframe() {
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("title", "Show video controls");
+    iframe.dataset.igvcOverlay = "launcher";
+    iframe.setAttribute("frameborder", "0");
+    iframe.style.position = "fixed";
+    iframe.style.width = "34px";
+    iframe.style.height = "30px";
+    iframe.style.border = "none";
+    iframe.style.borderRadius = "8px";
+    iframe.style.zIndex = "2147483647";
+    iframe.style.display = "none";
+    iframe.style.opacity = "0";
+    iframe.style.background = "transparent";
+    iframe.style.pointerEvents = "none";
+    iframe.style.transition = "opacity 120ms ease";
+    document.documentElement.appendChild(iframe);
+
+    const doc = iframe.contentDocument;
+    doc.open();
+    doc.write(`<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:transparent}
+        button{width:34px;height:30px;padding:0;border-radius:8px;
+          border:1px solid rgba(255,255,255,.55);background:rgba(15,15,15,.82);
+          color:white;font-size:23px;line-height:1;cursor:pointer}
+        button:focus-visible{outline:2px solid white;outline-offset:-3px}
+      </style></head><body>
+      <button id="openControls" type="button" title="Show playback controls" aria-label="Show playback controls">☷</button>
+      </body></html>`);
+    doc.close();
+    return iframe;
+  }
+
+  igvc.createCompactLauncherIframe = createCompactLauncherIframe;
   igvc.createBarIframe = createBarIframe;
   igvc.createVolumeIframe = createVolumeIframe;
 })();

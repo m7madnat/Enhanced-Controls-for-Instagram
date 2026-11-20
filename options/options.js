@@ -11,7 +11,7 @@ const DEFAULT_OPTIONS = {
   keepCurrentVideoPlaying: true,
   backgroundPlayback: true,
   showDownloadButton: true,
-  showControlsOnlyOnHover: true,
+  showControlsOnlyOnHover: false,
 };
 
 const fields = {
@@ -27,6 +27,7 @@ const fields = {
   volumeStep: document.getElementById("volumeStep"),
   keepCurrentVideoPlaying: document.getElementById("keepCurrentVideoPlaying"),
   backgroundPlayback: document.getElementById("backgroundPlayback"),
+  backgroundStories: document.getElementById("backgroundStories"),
   showDownloadButton: document.getElementById("showDownloadButton"),
   showControlsOnlyOnHover: document.getElementById("showControlsOnlyOnHover"),
 };
@@ -58,6 +59,7 @@ function sanitizeOptions(rawOptions) {
   options.keyboardShortcutsEnabled = Boolean(options.keyboardShortcutsEnabled);
   options.keepCurrentVideoPlaying = Boolean(options.keepCurrentVideoPlaying);
   options.backgroundPlayback = Boolean(options.backgroundPlayback);
+  options.backgroundStories = Boolean(options.backgroundStories);
   options.showDownloadButton = Boolean(options.showDownloadButton);
   options.showControlsOnlyOnHover = Boolean(options.showControlsOnlyOnHover);
 
@@ -85,6 +87,7 @@ function renderOptions(options) {
 
   fields.keepCurrentVideoPlaying.checked = options.keepCurrentVideoPlaying;
   fields.backgroundPlayback.checked = options.backgroundPlayback;
+  fields.backgroundStories.checked = options.backgroundStories;
   fields.showDownloadButton.checked = options.showDownloadButton;
   fields.showControlsOnlyOnHover.checked = options.showControlsOnlyOnHover;
 }
@@ -102,6 +105,7 @@ function readOptionsFromForm() {
     volumeStep: Number(fields.volumeStep.value),
     keepCurrentVideoPlaying: fields.keepCurrentVideoPlaying.checked,
     backgroundPlayback: fields.backgroundPlayback.checked,
+    backgroundStories: fields.backgroundStories.checked,
     showDownloadButton: fields.showDownloadButton.checked,
     showControlsOnlyOnHover: fields.showControlsOnlyOnHover.checked,
   });

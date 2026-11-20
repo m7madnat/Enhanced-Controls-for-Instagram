@@ -24,6 +24,7 @@
     options.keyboardShortcutsEnabled = Boolean(options.keyboardShortcutsEnabled);
     options.keepCurrentVideoPlaying = Boolean(options.keepCurrentVideoPlaying);
     options.backgroundPlayback = Boolean(options.backgroundPlayback);
+  options.backgroundStories = Boolean(options.backgroundStories);
     options.showDownloadButton = Boolean(options.showDownloadButton);
     options.showControlsOnlyOnHover = Boolean(options.showControlsOnlyOnHover);
 

@@ -11,8 +11,9 @@
     volumeStep: 0.05,
     keepCurrentVideoPlaying: true,
     backgroundPlayback: true,
+    backgroundStories: true,
     showDownloadButton: true,
-    showControlsOnlyOnHover: true,
+    showControlsOnlyOnHover: false,
   };
 
   window.__igvc = {

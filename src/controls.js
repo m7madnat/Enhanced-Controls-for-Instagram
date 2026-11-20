@@ -16,6 +16,10 @@
     applySavedState,
     clamp,
     createBarIframe,
+    createCompactLauncherIframe,
+    computeControlsPlacement,
+    computeFeedOverlayPlacement,
+    isDockingAreaSafe,
     createVolumeIframe,
     forceSavedStateRepeatedly,
     formatTime,
@@ -47,11 +51,15 @@
 
     const barIframe = createBarIframe();
     const volumeIframe = createVolumeIframe();
+    const launcherIframe = createCompactLauncherIframe();
 
     const barDoc = barIframe.contentDocument;
     const volumeDoc = volumeIframe.contentDocument;
+    const launcherDoc = launcherIframe.contentDocument;
 
     const playButton = barDoc.getElementById("playButton");
+    const collapseButton = barDoc.getElementById("collapseButton");
+    const openControlsButton = launcherDoc.getElementById("openControls");
     const muteButton = barDoc.getElementById("muteButton");
     const downloadButton = barDoc.getElementById("downloadButton");
     const seekBar = barDoc.getElementById("seekBar");
@@ -65,45 +73,79 @@
     let volumeHideTimer = null;
     let mediaStateFixTimer = null;
     let isVolumeOpen = false;
+    let isCompact = false;
+    // New videos start expanded, even in the collision-safe compact fallback.
+    let isExpanded = true;
+    let manuallyCollapsed = false;
+    let pointerOverVideo = false;
+    let isCleanedUp = false;
 
-    function showControls() {
+    function updateLauncherVisibility() {
+      const show = isVideoVisible(video) && (
+        manuallyCollapsed || (isCompact && !isExpanded &&
+          (pointerOverVideo || !getSettings().showControlsOnlyOnHover))
+      );
+      launcherIframe.style.display = show ? "block" : "none";
+      launcherIframe.style.opacity = show ? "1" : "0";
+      launcherIframe.style.pointerEvents = show ? "auto" : "none";
+    }
+
+    function showControls(expand = false) {
+      // Only pressing the launcher can override an explicit manual collapse.
+      if (isCleanedUp || (manuallyCollapsed && !expand)) return;
+      if (expand) {
+        manuallyCollapsed = false;
+        isExpanded = true;
+      }
+
       setActiveControlledVideo(video, false);
-
       if (!isVideoVisible(video)) {
         return;
       }
 
       clearTimeout(hideTimer);
-
-      updatePosition();
-
-      barIframe.style.opacity = "1";
+      // Do not reveal a stale off-video toolbar if the visible video region
+      // has become too small (e.g., while scrolling past a feed post).
+      if (!updatePosition()) return;
+      // Normally expanded from the outset; if closed, only ☷ reopens it.
+      const showBar = !manuallyCollapsed && (!isCompact || isExpanded);
+      barIframe.style.display = showBar ? "block" : "none";
+      barIframe.style.opacity = showBar ? "1" : "0";
       barIframe.style.transform = "translateY(0px)";
-      barIframe.style.pointerEvents = "auto";
+      barIframe.style.pointerEvents = showBar ? "auto" : "none";
+      updateLauncherVisibility();
+    }
+
+    function collapseControls() {
+      manuallyCollapsed = true;
+      isExpanded = false;
+      clearTimeout(hideTimer);
+      hideVolumePanel();
+      barIframe.style.display = "none";
+      barIframe.style.opacity = "0";
+      barIframe.style.pointerEvents = "none";
+      updateLauncherVisibility();
     }
 
     function hideControls() {
-      if (!getSettings().showControlsOnlyOnHover) {
-        showControls();
-        return;
-      }
-
+      if (manuallyCollapsed || !getSettings().showControlsOnlyOnHover) return;
       if (isSeeking || isVolumeOpen) {
         return;
       }
 
+      isExpanded = false;
       barIframe.style.opacity = "0";
       barIframe.style.transform = "translateY(12px)";
       barIframe.style.pointerEvents = "none";
-
+      if (isCompact) {
+        barIframe.style.display = "none";
+      }
+      updateLauncherVisibility();
       hideVolumePanel();
     }
 
     function scheduleHide() {
-      if (!getSettings().showControlsOnlyOnHover) {
-        showControls();
-        return;
-      }
+      if (manuallyCollapsed || !getSettings().showControlsOnlyOnHover) return;
 
       clearTimeout(hideTimer);
 
@@ -148,64 +190,79 @@
     }
 
     function updatePosition() {
+      if (isCleanedUp) {
+        return false;
+      }
       if (!document.contains(video) || isStoriesPage()) {
         cleanup();
-        return;
+        return false;
       }
 
       if (!isVideoVisible(video)) {
         barIframe.style.display = "none";
         volumeIframe.style.display = "none";
-        return;
+        launcherIframe.style.display = "none";
+        return false;
       }
 
       const rect = video.getBoundingClientRect();
-      const viewportPadding = 4;
-
-      const barWidth = clamp(
-        rect.width,
-        260,
-        window.innerWidth - viewportPadding * 2,
-      );
-
-      const barLeft = clamp(
-        rect.left,
-        viewportPadding,
-        window.innerWidth - barWidth - viewportPadding,
-      );
-
-      let barTop = rect.bottom - BAR_HEIGHT;
-
-      if (barTop < rect.top) {
-        barTop = rect.top;
+      // The home feed should behave like an in-video Reels toolbar, not
+      // float beside posts when Instagram leaves a blank side column.
+      // Keep Reels and other routes' existing placement untouched.
+      const placement = window.location.pathname === '/'
+        ? computeFeedOverlayPlacement(rect, window.innerWidth, window.innerHeight)
+        : computeControlsPlacement(
+          rect,
+          window.innerWidth,
+          window.innerHeight,
+          function (candidate) {
+            return isDockingAreaSafe(candidate, video, document,
+              [barIframe, volumeIframe, launcherIframe]);
+          },
+        );
+      if (!placement) {
+        barIframe.style.display = 'none';
+        volumeIframe.style.display = 'none';
+        launcherIframe.style.display = 'none';
+        return false;
       }
+      isCompact = placement.mode === "compact";
 
-      if (barTop + BAR_HEIGHT > window.innerHeight) {
-        barTop = window.innerHeight - BAR_HEIGHT;
-      }
-
-      barIframe.style.left = `${barLeft}px`;
-      barIframe.style.top = `${barTop}px`;
-      barIframe.style.width = `${barWidth}px`;
+      barIframe.style.left = `${placement.left}px`;
+      barIframe.style.top = `${placement.top}px`;
+      barIframe.style.width = `${placement.width}px`;
       barIframe.style.height = `${BAR_HEIGHT}px`;
-      barIframe.style.display = "block";
+      barIframe.style.display = !manuallyCollapsed && (!isCompact || isExpanded)
+        ? "block" : "none";
+      // Closing must work even when the toolbar is docked outside the video.
+      collapseButton.style.display = "flex";
 
+      // The launcher is also needed after manually closing a docked toolbar.
+      // Anchor it to the video (not the now-invisible docked toolbar).
+      const launcherLeft = Math.max(8,
+        Math.min(rect.right - 42, window.innerWidth - 44));
+      const launcherTop = Math.max(8,
+        Math.min(rect.top + 8, window.innerHeight - 40));
+      launcherIframe.style.left = `${launcherLeft}px`;
+      launcherIframe.style.top = `${launcherTop}px`;
+      updateLauncherVisibility();
+
+      const viewportPadding = 4;
       const volumeLeft = clamp(
-        barLeft + barWidth - VOLUME_WIDTH - 2,
+        placement.left + placement.width - VOLUME_WIDTH - 2,
         viewportPadding,
-        window.innerWidth - VOLUME_WIDTH - viewportPadding,
+        Math.max(viewportPadding, window.innerWidth - VOLUME_WIDTH - viewportPadding),
       );
-
       const volumeTop = clamp(
-        barTop - VOLUME_HEIGHT,
+        placement.top - VOLUME_HEIGHT,
         viewportPadding,
-        window.innerHeight - VOLUME_HEIGHT - viewportPadding,
+        Math.max(viewportPadding, window.innerHeight - VOLUME_HEIGHT - viewportPadding),
       );
-
       volumeIframe.style.left = `${volumeLeft}px`;
       volumeIframe.style.top = `${volumeTop}px`;
       volumeIframe.style.width = `${VOLUME_WIDTH}px`;
       volumeIframe.style.height = `${VOLUME_HEIGHT}px`;
+      return true;
     }
 
     function updateUi() {
@@ -316,14 +373,18 @@
 
       const rect = video.getBoundingClientRect();
 
-      if (isMouseInsideRect(event, rect)) {
+      pointerOverVideo = isMouseInsideRect(event, rect);
+      if (pointerOverVideo) {
         showControls();
       } else {
+        updateLauncherVisibility();
         scheduleHide();
       }
     }
 
     function cleanup() {
+      if (isCleanedUp) return;
+      isCleanedUp = true;
       clearInterval(positionTimer);
       clearTimeout(hideTimer);
       clearTimeout(volumeHideTimer);
@@ -354,7 +415,21 @@
       if (volumeIframe && volumeIframe.parentElement) {
         volumeIframe.remove();
       }
+      if (launcherIframe && launcherIframe.parentElement) {
+        launcherIframe.remove();
+      }
     }
+
+    openControlsButton.addEventListener("click", function () {
+      showControls(true);
+    });
+
+    collapseButton.addEventListener("click", collapseControls);
+
+    launcherDoc.addEventListener("mouseenter", function () {
+      pointerOverVideo = true;
+      updateLauncherVisibility();
+    });
 
     playButton.addEventListener("click", function () {
       togglePlay();
@@ -529,6 +604,7 @@
     overlays.set(video, {
       barIframe,
       volumeIframe,
+      launcherIframe,
       cleanup,
     });
 

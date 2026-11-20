@@ -13,8 +13,9 @@
     volumeStep: 0.05,
     keepCurrentVideoPlaying: true,
     backgroundPlayback: true,
+    backgroundStories: true,
     showDownloadButton: true,
-    showControlsOnlyOnHover: true,
+    showControlsOnlyOnHover: false,
   };
 
   function sanitizeOptions(rawOptions) {
@@ -35,6 +36,7 @@
     options.keyboardShortcutsEnabled = Boolean(options.keyboardShortcutsEnabled);
     options.keepCurrentVideoPlaying = Boolean(options.keepCurrentVideoPlaying);
     options.backgroundPlayback = Boolean(options.backgroundPlayback);
+  options.backgroundStories = Boolean(options.backgroundStories);
     options.showDownloadButton = Boolean(options.showDownloadButton);
     options.showControlsOnlyOnHover = Boolean(options.showControlsOnlyOnHover);
 
@@ -54,17 +56,32 @@
     return;
   }
 
-  chrome.storage.sync.get(DEFAULT_OPTIONS, function (items) {
-    writeOptionsToPageStorage(items);
-  });
+  const MIGRATION_KEY = "__igvc_default_visible_v114__";
 
-  chrome.storage.onChanged.addListener(function (changes, areaName) {
-    if (areaName !== "sync") {
+  function applySyncedOptions(items) {
+    const saved = items && typeof items === "object" ? items : {};
+    if (saved[MIGRATION_KEY] !== true) {
+      // The old release defaulted to hover-only. Reset this option just once,
+      // including on upgrades with a previously saved hover-only preference.
+      const migrated = {
+        ...saved,
+        showControlsOnlyOnHover: false,
+        [MIGRATION_KEY]: true,
+      };
+      writeOptionsToPageStorage(migrated);
+      chrome.storage.sync.set({
+        showControlsOnlyOnHover: false,
+        [MIGRATION_KEY]: true,
+      });
       return;
     }
+    writeOptionsToPageStorage(saved);
+  }
 
-    chrome.storage.sync.get(DEFAULT_OPTIONS, function (items) {
-      writeOptionsToPageStorage(items);
-    });
+  chrome.storage.sync.get(null, applySyncedOptions);
+
+  chrome.storage.onChanged.addListener(function (_changes, areaName) {
+    if (areaName !== "sync") return;
+    chrome.storage.sync.get(null, applySyncedOptions);
   });
 })();
